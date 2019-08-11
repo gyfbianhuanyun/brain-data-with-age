@@ -1,5 +1,6 @@
 # brain-data-with-age
 brain data with age in Hongik University
+
 Master's thesis-- Age Classification From MRI Data Using RNN 2019.08
 
 We use a deep learning network to analyze images of the human brain to estimate of subject's age.

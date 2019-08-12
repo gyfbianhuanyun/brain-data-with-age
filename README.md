@@ -13,3 +13,13 @@ we use Gated Recurrent Unit (GRU) deep learning neural network to explore the re
 
 우리는 대상자의 나이를 추정하기 위해 인간 두뇌의 이미지를 분석해서 심층 학습 네트워크를 사용한다.
 우리는 인간의 뇌의 기능 자기공명영상(fMRI) 데이터를 이용하여 GRU(Gated Recurrent Unit) 심층학습 신경망을 이용하여 나이와 인간의 뇌 구조 사이의 관계를 탐구한다.
+
+First, the obtained fMRI data is processed, and the image is processed using fsl (fsl_in_linux.py)
+
+Secondly, the processed image is compared with the preset image to obtain data of each brain domain with time (comparision.py). 
+
+Third, make multiple comparisons of the data (entropy.py, rms.py, sum_of_absolute.py, variance.py, Compare_different_algorithms). 
+
+Fourth, the age is classified using a deep learning network (ML_GRU_all_train_test.py). 
+
+Fifth, improve the learning network to improve training results (ML_upgrade.py).

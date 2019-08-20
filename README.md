@@ -18,8 +18,6 @@ First, the obtained fMRI data is processed, and the image is processed using fsl
 
 Secondly, the processed image is compared with the preset image to obtain data of each brain domain with time (comparision.py). 
 
-Third, make multiple comparisons of the data (entropy.py, rms.py, sum_of_absolute.py, variance.py, Compare_different_algorithms). 
+Third, the age is classified using a deep learning network (ML_GRU_all_train_test.py). 
 
-Fourth, the age is classified using a deep learning network (ML_GRU_all_train_test.py). 
-
-Fifth, improve the learning network to improve training results (ML_upgrade.py).
+Fourth, improve the learning network to improve training results (ML_upgrade.py).

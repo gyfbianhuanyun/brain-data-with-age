@@ -56,7 +56,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
     kf = KFold(n_splits=n_k_fold, shuffle=False)
     for train_index, valid_index in kf.split(data_x[0:train_num+valid_num, :, :]):
 
-        criterion = torch.nn.MSELoss().to(device)
+        criterion = nn.MSELoss().to(device)
         optimizer = torch.optim.Adam(mynet.parameters(), lr=0.001)
         lr_sche = torch.optim.lr_scheduler.StepLR(
                     optimizer, step_size=100, gamma=lr_gamma)

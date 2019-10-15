@@ -5,7 +5,7 @@ import seaborn as sns
 
 # Plot train and validation loss
 def plot_train_val_loss(output_path, title, dpi=800, yscale=None, ylim=None):
-    data = pd.read_csv('{}/loss_{}.csv'.format(output_path, title))
+    data = pd.read_csv(f'{output_path}/loss_{title}.csv')
     sns.scatterplot(x='epoch', y='loss', hue='k_fold', style='step', legend='full',
                     palette='Set2', data=data, s=15)
     plt.legend(ncol=4)

@@ -83,14 +83,14 @@ def normalize_tensor(tensor, minmax):
 
 
 # Train
-def train(start, rate, datax, datay):
+def train(device, start, rate, datax, datay):
     train_x_tensor, train_y_tensor = get_tensor(
         device, datax, datay, start, start + rate)
     return train_x_tensor, train_y_tensor
 
 
 # Validation
-def valid(start, rate, datax, datay):
+def valid(device, start, rate, datax, datay):
     valid_x_tensor, valid_y_tensor = get_tensor(
         device, datax, datay, start, start + rate)
     return valid_x_tensor, valid_y_tensor

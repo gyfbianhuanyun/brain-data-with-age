@@ -19,6 +19,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
     input_dim = param['region_n']
     n_epochs = param['n_epochs']
     outputfolder = param['outputfolder']
+    tempfolder = param['tempfolder']
     minmax_y = param['minmax_y']
     rate_tr = param['rate_train']
     rate_va = param['rate_valid']
@@ -53,6 +54,8 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
     epoch_list = []
     k_fold_list = []
 
+    safe_make_dir(f'./{tempfolder}')
+
     kf = KFold(n_splits=n_k_fold, shuffle=False)
     for train_index, valid_index in kf.split(data_x[0:train_num+valid_num, :, :]):
 
@@ -76,7 +79,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
             loss = 0
 
             for tr in range(int(train_num / rate_tr)):
-                train_x_tensor, train_y_tensor = train(tr*rate_tr, rate_tr, train_xdata, train_ydata)
+                train_x_tensor, train_y_tensor = train(device, tr*rate_tr, rate_tr, train_xdata, train_ydata)
 
                 optimizer.zero_grad()
                 outputs = mynet(train_x_tensor)
@@ -96,7 +99,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
             valid_loss = 0
 
             for va in range(int(valid_num / rate_va)):
-                valid_x_tensor, valid_y_tensor = valid(va*rate_va, rate_va, valid_xdata, valid_ydata)
+                valid_x_tensor, valid_y_tensor = valid(device, va*rate_va, rate_va, valid_xdata, valid_ydata)
                 valid_result = mynet(valid_x_tensor)
                 loss_valid = criterion(valid_result, valid_y_tensor)
                 valid_loss = valid_loss + loss_valid
@@ -107,10 +110,10 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
             k_fold_list.append(k)
 
             if valid_loss.item() <= total_loss_valid_min:
-                torch.save(mynet.state_dict(), './model_new/{}_{}.pt'.format(out_fname, k))
+                torch.save(mynet.state_dict(), f'./{tempfolder}/{out_fname}_{k}.pt')
                 total_loss_valid_min = valid_loss.item()
 
-        init_weights(mynet)
+        mynet.init_weights()
 
     epoch_arr = np.array(epoch_list)
     loss_arr = np.array(loss_list)
@@ -131,7 +134,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
     # Test
     beta = 1 / n_k_fold  # The interpolation parameter
 
-    mynet.load_state_dict(torch.load('./model_new/{}_1.pt'.format(out_fname)))
+    mynet.load_state_dict(torch.load(f'./{tempfolder}/{out_fname}_1.pt'))
     params1 = mynet.named_parameters()
     dict_params = dict(params1)
 
@@ -140,7 +143,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
             dict_params[name1].data.copy_(beta * param1.data)
 
     for i in range(1, n_k_fold):
-        mynet.load_state_dict(torch.load('./model_new/{}_{}.pt'.format(out_fname, i + 1)))
+        mynet.load_state_dict(torch.load(f'./{tempfolder}/{out_fname}_{i+1}.pt'))
         params2 = mynet.named_parameters()
         dict_params2 = dict(params2)
 
@@ -171,10 +174,11 @@ if __name__ == "__main__":
 
     param = {'data_folder': 'rest_csv_data',
              'device': device,
-             'label_fname': 'brain_entropy_model_valid_min201904041559.csv',
+             'label_fname': 'preprocessed_data.csv',
              'minmax_x': [4, 16789],  # x_values are between 4 and 16788.8
              'minmax_y': [10, 80],  # y_values are between 10 and 80
              'outputfolder': 'output',
+             'tempfolder': 'model_new',
              'region_n': 94,  # Number of brain regions (input dim 2)
              'time_len': 100,  # Number of timepoints (input dim 1)
              'n_epochs': 10000,

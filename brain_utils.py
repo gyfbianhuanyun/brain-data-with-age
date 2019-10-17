@@ -54,12 +54,11 @@ def safe_make_dir(output_path):
 
 
 # Write losses to file
-def write_loss(epoch_number_arr, loss_arr, step_name_arr, k_fold_number_arr,
-        output_path, output_fname):
+def write_loss(epoch_number_arr, loss_arr, step_name_arr, k_fold_number_arr, out_path):
     df = pd.DataFrame({'epoch': epoch_number_arr,
                        'loss': loss_arr,
                        'step': step_name_arr,
                        'k_fold': k_fold_number_arr})
 
-    df.to_csv(f'{output_path}/loss_{output_fname}.csv')
+    df.to_csv(os.path.join(out_path, 'loss.csv'))
 

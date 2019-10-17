@@ -13,18 +13,19 @@ from brain_RNN import *
 
 
 # Main
-def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
+def wrapper(param, data_x, data_y):
 
     device = param['device']
     input_dim = param['region_n']
     n_epochs = param['n_epochs']
-    outputfolder = param['outputfolder']
-    tempfolder = param['tempfolder']
     minmax_y = param['minmax_y']
     rate_tr = param['rate_train']
     rate_va = param['rate_valid']
     rate_te = param['rate_test']
     n_k_fold = param['number_k_fold']
+    lr_gamma = param['lr_gamma']
+    hidden_dim = param['hidden_dim']
+    layers = param['layers']
 
     output_dim = 1  # Output dimension
     drop_prob = 0.5  # Drop probability during training
@@ -41,7 +42,14 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
     if test_num % rate_te != 0:
         print('Please reset rate_test')
 
-    out_fname = f'hidden_dim_{hidden_dim}_layers_{layers}_lr_gamma_{lr_gamma}'
+    cwd = os.getcwd()
+    out_fname = f'h_dim_{hidden_dim}_layers_{layers}_lr_{lr_gamma}_nepoch_{n_epochs}'
+    out_path = os.path.join(cwd, out_fname)
+    safe_make_dir(out_path)
+    temp_path = os.path.join(out_path, 'temp')
+    safe_make_dir(temp_path)
+    fig_path = os.path.join(out_path, 'figs')
+    safe_make_dir(fig_path)
 
     mynet = RNNClassifier(
         input_dim, hidden_dim, output_dim, layers, drop_prob).to(device)
@@ -54,7 +62,6 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
     epoch_list = []
     k_fold_list = []
 
-    safe_make_dir(f'./{tempfolder}')
 
     kf = KFold(n_splits=n_k_fold, shuffle=False)
     for train_index, valid_index in kf.split(data_x[0:train_num+valid_num, :, :]):
@@ -110,7 +117,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
             k_fold_list.append(k)
 
             if valid_loss.item() <= total_loss_valid_min:
-                torch.save(mynet.state_dict(), f'./{tempfolder}/{out_fname}_{k}.pt')
+                torch.save(mynet.state_dict(), os.path.join(temp_path, f'epoch_{k}.pt'))
                 total_loss_valid_min = valid_loss.item()
 
         mynet.init_weights()
@@ -120,13 +127,11 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
     step_arr = np.array(step_list)
     k_fold_arr = np.array(k_fold_list)
 
-    output_path = f'./figs/{outputfolder}'
-    safe_make_dir(output_path)
     # Write loss values in csv file
-    write_loss(epoch_arr, loss_arr, step_arr, k_fold_arr, output_path, out_fname)
+    write_loss(epoch_arr, loss_arr, step_arr, k_fold_arr, out_path)
 
     # Plot train and validation losses
-    plot_train_val_loss(output_path, out_fname, dpi=800, yscale='log', ylim=[0.0001, 10])
+    plot_train_val_loss(fig_path, out_fname, dpi=800, yscale='log', ylim=[0.0001, 10])
 
     end = time.time()  # Learning Done
     print(f"Learning Done in {end-start}s")
@@ -134,7 +139,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
     # Test
     beta = 1 / n_k_fold  # The interpolation parameter
 
-    mynet.load_state_dict(torch.load(f'./{tempfolder}/{out_fname}_1.pt'))
+    mynet.load_state_dict(torch.load(os.path.join(temp_path, 'epoch_1.pt')))
     params1 = mynet.named_parameters()
     dict_params = dict(params1)
 
@@ -143,7 +148,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
             dict_params[name1].data.copy_(beta * param1.data)
 
     for i in range(1, n_k_fold):
-        mynet.load_state_dict(torch.load(f'./{tempfolder}/{out_fname}_{i+1}.pt'))
+        mynet.load_state_dict(torch.load(os.path.join(temp_path, f'epoch_{i+1}.pt')))
         params2 = mynet.named_parameters()
         dict_params2 = dict(params2)
 
@@ -161,8 +166,7 @@ def wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers):
         test_result = mynet(test_x_tensor)
         test_loss = criterion(test_result, test_y_tensor)
         print(f"Test Loss: {test_loss.item()}")
-    plot_result(
-        test_y_tensor, test_result, minmax_y, output_path, out_fname)
+    plot_result(test_y_tensor, test_result, minmax_y, fig_path, out_fname)
 
 
 if __name__ == "__main__":
@@ -177,16 +181,14 @@ if __name__ == "__main__":
              'label_fname': 'preprocessed_data.csv',
              'minmax_x': [4, 16789],  # x_values are between 4 and 16788.8
              'minmax_y': [10, 80],  # y_values are between 10 and 80
-             'outputfolder': 'output',
-             'tempfolder': 'model_new',
              'region_n': 94,  # Number of brain regions (input dim 2)
              'time_len': 100,  # Number of timepoints (input dim 1)
-             'n_epochs': 10000,
+             'n_epochs': 3000,
              # Iterable values
-             'gamma_list': [0.99, 0.975, 0.95],
-             'hidden_dim_list': [200, 300],
-             'layers_list': [3, 4, 5, 6],
-             'rate_train': 140,
+             'lr_gamma': 0.99,
+             'hidden_dim': 300,
+             'layers': 3,
+             'rate_train': 560,
              'rate_valid': 80,
              'rate_test': 155,
              'number_k_fold': 8}
@@ -195,15 +197,7 @@ if __name__ == "__main__":
     print("Generating Data")
     data_x, data_y = get_data(param)
 
-    product_set = itertools.product(
-        param['gamma_list'],
-        param['hidden_dim_list'],
-        param['layers_list'])
+    for n_epochs in [30, 100]:
+        param['n_epochs'] = n_epochs
+        wrapper(param, data_x, data_y)
 
-    #for lr_gamma, hidden_dim, layers in product_set:
-     #   wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers)
-    lr_gamma = param['gamma_list'][0]
-    hidden_dim = param['hidden_dim_list'][1]
-    layers = param['layers_list'][3]
-    wrapper(param, data_x, data_y, lr_gamma, hidden_dim, layers)
-    torch.cuda.empty_cache()

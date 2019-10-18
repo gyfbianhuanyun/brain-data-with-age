@@ -52,7 +52,7 @@ subject_list = []
 project_list = []
 for project_name in project_namelist:
     project_name = 'SALD'
-    file_namelist = file_name('/home/fsluser/Documents/{}'.format(project_name))
+    file_namelist = file_name(f'/home/fsluser/Documents/{project_name}')
     print(project_name, file_namelist)
     print(len(file_namelist), len(project_namelist))
     for name in file_namelist:
@@ -67,5 +67,5 @@ entropy_project.to_csv('/home/fsluser/PycharmProjects/fsl/entropy_project/projec
 '''
 
 end = time.clock()
-print('Total Running time:{}'.format(end - start))
+print(f'Total Running time:{end - start}')
 #print(num)

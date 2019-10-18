@@ -26,12 +26,15 @@ def wrapper(param, data_x, data_y):
     lr_gamma = param['lr_gamma']
     hidden_dim = param['hidden_dim']
     layers = param['layers']
+    day = param['days']
+    train_num = param['number_train']
+    valid_num = param['number_valid']
+    test_num = param['number_test']
+    layer_rate = param['running_rate']
 
-    output_dim = 1  # Output dimension
-    drop_prob = 0.5  # Drop probability during training
-    train_num = 560
-    valid_num = 80
-    test_num = 155
+    output_dim = param['output_dimension']
+    drop_prob = param['drop_p']
+    
     total_num = len(data_y)
     k = 0
 
@@ -43,7 +46,7 @@ def wrapper(param, data_x, data_y):
         print('Please reset rate_test')
 
     cwd = os.getcwd()
-    out_fname = f'h_dim_{hidden_dim}_layers_{layers}_lr_{lr_gamma}_nepoch_{n_epochs}'
+    out_fname = f'h_dim_{hidden_dim}_layers_{layers}_lr_{lr_gamma}_nepoch_{n_epochs}_k_{n_k_fold}_time_{day}'
     out_path = os.path.join(cwd, out_fname)
     safe_make_dir(out_path)
     temp_path = os.path.join(out_path, 'temp')
@@ -67,7 +70,7 @@ def wrapper(param, data_x, data_y):
     for train_index, valid_index in kf.split(data_x[0:train_num+valid_num, :, :]):
 
         criterion = nn.MSELoss().to(device)
-        optimizer = torch.optim.Adam(mynet.parameters(), lr=0.001)
+        optimizer = torch.optim.Adam(mynet.parameters(), lr=layer_rate)
         lr_sche = torch.optim.lr_scheduler.StepLR(
                     optimizer, step_size=100, gamma=lr_gamma)
 
@@ -175,12 +178,16 @@ if __name__ == "__main__":
     # solve display issue in ssh environment
     os.environ['QT_QPA_PLATFORM'] = 'offscreen'
     device = get_device()
+    get_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
     param = {'data_folder': 'rest_csv_data',
              'device': device,
              'label_fname': 'preprocessed_data.csv',
              'minmax_x': [4, 16789],  # x_values are between 4 and 16788.8
              'minmax_y': [10, 80],  # y_values are between 10 and 80
+             'running_rate': 0.001, 
+             'output_dimension': 1  # Output dimension
+             'drop_p': 0.5  # Drop probability during training
              'region_n': 94,  # Number of brain regions (input dim 2)
              'time_len': 100,  # Number of timepoints (input dim 1)
              'n_epochs': 3000,
@@ -191,7 +198,11 @@ if __name__ == "__main__":
              'rate_train': 560,
              'rate_valid': 80,
              'rate_test': 155,
-             'number_k_fold': 8}
+             'number_train': 560,
+             'number_valid': 80,
+             'number_test': 155,
+             'number_k_fold': 8,
+             'days': get_time }
 
     # Get data
     print("Generating Data")

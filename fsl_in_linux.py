@@ -13,28 +13,29 @@ def file_name(file_dir):
 #Because the file names are the same, the path is detailed.
 #Change the path according to the actual situation
 def file_wr(project_name, file_name, first_file):
-    with open('/home/fsluser/Documents/{}/{}/func.feat/design.fsf'.format(project_name, first_file)) as file_o, \
-            open('/home/fsluser/Documents/{}/{}/design.fsf'.format(project_name, file_name), 'w') as file_1:
+    f'now time = {time1}'
+    with open(f'/home/fsluser/Documents/{project_name}/{first_file}/func.feat/design.fsf') as file_o, \
+            open(f'/home/fsluser/Documents/{project_name}/{file_name}/design.fsf', 'w') as file_1:
         for line in file_o:
-            if '/home/fsluser/Documents/{}/{}/func'.format(project_name, first_file) in line:
-                line = line.replace('/home/fsluser/Documents/{}/{}/func'.format(project_name, first_file),
-                                    '/home/fsluser/Documents/{}/{}/func'.format(project_name, file_name))
-            if '{}_task-rest_bold'.format(first_file) in line:
-                line = line.replace('{}_task-rest_bold'.format(first_file),
-                                    '{}_task-rest_bold'.format(file_name))
+            if f'/home/fsluser/Documents/{project_name}/{first_file}/func' in line:
+                line = line.replace(f'/home/fsluser/Documents/{project_name}/{first_file}/func',
+                                    f'/home/fsluser/Documents/{project_name}/{file_name}/func')
+            if f'{first_file}_task-rest_bold' in line:
+                line = line.replace(f'{first_file}_task-rest_bold',
+                                    f'{file_name}_task-rest_bold')
             file_1.write(line)
 
 #run feat preprocess
 def feat_o(project_name, file_name):
     feat = fsl.FEAT()
-    feat.inputs.fsf_file = '/home/fsluser/Documents/{}/{}/design.fsf'.format(project_name, file_name)
+    feat.inputs.fsf_file = f'/home/fsluser/Documents/{project_name}/{file_name}/design.fsf'
     feat.run()
 
 #run 4D registration
 def regis(project_name, file_name):
     applyxfm = fsl.preprocess.ApplyXFM()
-    applyxfm.inputs.in_file = '/home/fsluser/Documents/{}/{}/func.feat/filtered_func_data.nii.gz'.format(project_name, file_name)
-    applyxfm.inputs.in_matrix_file = '/home/fsluser/Documents/{}/{}/func.feat/reg/example_func2standard.mat'.format(project_name, file_name)
+    applyxfm.inputs.in_file = f'/home/fsluser/Documents/{project_name}/{file_name}/func.feat/filtered_func_data.nii.gz'
+    applyxfm.inputs.in_matrix_file = f'/home/fsluser/Documents/{project_name}/{file_name}/func.feat/reg/example_func2standard.mat'
     applyxfm.inputs.reference = 'MNI152_T1_3mm_brain.nii.gz'
     applyxfm.inputs.apply_xfm = True
     applyxfm.run()
@@ -52,7 +53,7 @@ def func_fsl(project_name, file_namelist, first_name):
         regis(project_name, subject_name)
         print('step 4 move the file to the target directory ')
         shutil.move('/home/fsluser/PycharmProjects/fsl/filtered_func_data_flirt.nii.gz',
-                    '/home/fsluser/Documents/{}/{}/filtered_func_data_flirt.nii.gz'.format(project_name, subject_name))
+                    f'/home/fsluser/Documents/{project_name}/{subject_name}/filtered_func_data_flirt.nii.gz')
 
 '''
 #for example
@@ -61,7 +62,7 @@ project_namelist = file_name('/home/fsluser/Documents')
 print(project_namelist)
 for i in range(0, 30):
     project_name = project_namelist[i]
-    file_namelist = file_name('/home/fsluser/Documents/{}'.format(project_name))
+    file_namelist = file_name(f'/home/fsluser/Documents/{project_name}')
     print(project_name, file_namelist)
     print(len(file_namelist), len(project_namelist))
     first_name = file_namelist[0]

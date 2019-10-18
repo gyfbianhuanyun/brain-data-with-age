@@ -12,3 +12,5 @@ First, the obtained fMRI data is processed, and the image is processed using fsl
 Secondly, the processed image is compared with the preset image to obtain data of each brain domain with time (comparision.py). 
 
 Third, the age is estimated using a deep learning network (brain_.py). 
+
+In addition, the entropy can be calculated (entropy.py)

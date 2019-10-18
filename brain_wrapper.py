@@ -26,7 +26,7 @@ def wrapper(param, data_x, data_y):
     lr_gamma = param['lr_gamma']
     hidden_dim = param['hidden_dim']
     layers = param['layers']
-    day = param['days']
+    now_time = param['present_time']
     train_num = param['number_train']
     valid_num = param['number_valid']
     test_num = param['number_test']
@@ -46,7 +46,7 @@ def wrapper(param, data_x, data_y):
         print('Please reset rate_test')
 
     cwd = os.getcwd()
-    out_fname = f'h_dim_{hidden_dim}_layers_{layers}_lr_{lr_gamma}_nepoch_{n_epochs}_k_{n_k_fold}_time_{day}'
+    out_fname = f'h_dim_{hidden_dim}_layers_{layers}_lr_{lr_gamma}_nepoch_{n_epochs}_k_{n_k_fold}_time_{now_time}'
     out_path = os.path.join(cwd, out_fname)
     safe_make_dir(out_path)
     temp_path = os.path.join(out_path, 'temp')
@@ -202,7 +202,7 @@ if __name__ == "__main__":
              'number_valid': 80,
              'number_test': 155,
              'number_k_fold': 8,
-             'days': get_time }
+             'present_time': get_time }
 
     # Get data
     print("Generating Data")

@@ -21,7 +21,7 @@ def comparision(project_name, file_name):
     n_roi = len(roi_list)# nrio = 120;area = 120
 
     #Load objective rest.nii
-    rest_file = nib.load('/home/fsluser/Documents/{}/{}/filtered_func_data_flirt.nii.gz'.format(project_name, file_name))
+    rest_file = nib.load(f'/home/fsluser/Documents/{project_name}/{file_name}/filtered_func_data_flirt.nii.gz')
     image = rest_file.get_data() #image = 61*73*61*185
     n_ts = image.shape[3] # nts = 185;scanning time = 185
 
@@ -33,12 +33,12 @@ def comparision(project_name, file_name):
 
     #Calculate the value of each region of the brain
     for idx, roi in enumerate(roi_list):
-        print('roi = {}'.format(roi))
+        print(f'roi = {roi}')
         #Extraction region location extract = 61*73*61
         img_cpy = np.copy(image)
         img_cpy[mask_4d!=roi] = np.nan
         roi_ts[:, idx] = np.nanmean(img_cpy, axis=(0,1,2))
-    with open('/home/fsluser/Documents/{}/{}/rest_image.csv'.format(project_name, file_name), 'w') as myfile:
+    with open(f'/home/fsluser/Documents/{project_name}/{file_name}/rest_image.csv', 'w') as myfile:
         data = csv.writer(myfile)
         data.writerows(roi_ts)
 '''
@@ -46,7 +46,7 @@ def comparision(project_name, file_name):
 project_namelist = file_name('/home/fsluser/Documents')
 print(project_namelist)
 for project_name in project_namelist:
-    file_namelist = file_name('/home/fsluser/Documents/{}'.format(project_name))
+    file_namelist = file_name(f'/home/fsluser/Documents/{project_name}')
     print(project_name, file_namelist)
     print(len(file_namelist), len(project_namelist))
     for name in file_namelist:
@@ -55,6 +55,6 @@ for project_name in project_namelist:
 '''
 
 end4 = time.clock()
-print('Total Running time:{}'.format(end4 - start))
+print(f'Total Running time:{end4 - start}')
 
 

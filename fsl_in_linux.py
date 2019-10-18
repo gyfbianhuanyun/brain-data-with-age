@@ -13,7 +13,6 @@ def file_name(file_dir):
 #Because the file names are the same, the path is detailed.
 #Change the path according to the actual situation
 def file_wr(project_name, file_name, first_file):
-    f'now time = {time1}'
     with open(f'/home/fsluser/Documents/{project_name}/{first_file}/func.feat/design.fsf') as file_o, \
             open(f'/home/fsluser/Documents/{project_name}/{file_name}/design.fsf', 'w') as file_1:
         for line in file_o:

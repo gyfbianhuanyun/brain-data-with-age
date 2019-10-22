@@ -185,9 +185,9 @@ if __name__ == "__main__":
              'label_fname': 'preprocessed_data.csv',
              'minmax_x': [4, 16789],  # x_values are between 4 and 16788.8
              'minmax_y': [10, 80],  # y_values are between 10 and 80
-             'running_rate': 0.001, 
-             'output_dimension': 1  # Output dimension
-             'drop_p': 0.5  # Drop probability during training
+             'running_rate': 0.0001,
+             'output_dimension': 1, # Output dimension
+             'drop_p': 0.5, # Drop probability during training
              'region_n': 94,  # Number of brain regions (input dim 2)
              'time_len': 100,  # Number of timepoints (input dim 1)
              'n_epochs': 3000,
@@ -202,7 +202,7 @@ if __name__ == "__main__":
              'number_valid': 80,
              'number_test': 155,
              'number_k_fold': 8,
-             'present_time': get_time }
+             'present_time': get_time}
 
     # Get data
     print("Generating Data")

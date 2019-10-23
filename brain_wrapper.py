@@ -52,9 +52,6 @@ def wrapper(param, data_x, data_y):
     temp_path = os.path.join(out_path, 'temp')
     safe_make_dir(temp_path)
 
-    mynet = RNNClassifier(
-        input_dim, hidden_dim, output_dim, layers, drop_prob).to(device)
-
     start = time.time()  # Start Learning
     print("Start Learning " + out_fname)
 
@@ -66,6 +63,9 @@ def wrapper(param, data_x, data_y):
 
     kf = KFold(n_splits=n_k_fold, shuffle=True)
     for train_index, valid_index in kf.split(data_x[0:train_num+valid_num, :, :]):
+        mynet = RNNClassifier(
+            input_dim, hidden_dim, output_dim, layers, drop_prob).to(device)
+        mynet.init_weights()
 
         criterion = nn.MSELoss().to(device)
         optimizer = torch.optim.Adam(mynet.parameters(), lr=layer_rate)
@@ -121,7 +121,6 @@ def wrapper(param, data_x, data_y):
                 torch.save(mynet.state_dict(), os.path.join(temp_path, f'epoch_{k}.pt'))
                 total_loss_valid_min = valid_loss.item()
 
-        mynet.init_weights()
 
     epoch_arr = np.array(epoch_list)
     loss_arr = np.array(loss_list)

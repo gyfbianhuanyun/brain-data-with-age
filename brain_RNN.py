@@ -42,7 +42,7 @@ class RNNClassifier(nn.Module):
     # Initialization parameter
     def init_weights(self):
         for m in self.modules():
-            if type(m) in [nn.GRU, nn.LSTM, nn.RNN]:
+            if type(m) in [nn.GRU, nn.LSTM, nn.Linear]:
                 for name, param in m.named_parameters():
                     if 'weight_ih' in name:
                         torch.nn.init.xavier_uniform_(param.data)
@@ -50,6 +50,8 @@ class RNNClassifier(nn.Module):
                         torch.nn.init.orthogonal_(param.data)
                     elif 'bias' in name:
                         param.data.fill_(0)
+                    elif 'weight' in name:
+                        torch.nn.init.xavier_uniform_(param.data)
 
 
 # Put data in tensor

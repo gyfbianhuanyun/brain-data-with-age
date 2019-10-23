@@ -46,13 +46,11 @@ def wrapper(param, data_x, data_y):
         print('Please reset rate_test')
 
     cwd = os.getcwd()
-    out_fname = f'h_dim_{hidden_dim}_layers_{layers}_lr_{lr_gamma}_nepoch_{n_epochs}_k_{n_k_fold}_time_{now_time}'
+    out_fname = f'{now_time}_h_{hidden_dim}_l_{layers}_lr_{lr_gamma}_n_{n_epochs}'
     out_path = os.path.join(cwd, out_fname)
     safe_make_dir(out_path)
     temp_path = os.path.join(out_path, 'temp')
     safe_make_dir(temp_path)
-    fig_path = os.path.join(out_path, 'figs')
-    safe_make_dir(fig_path)
 
     mynet = RNNClassifier(
         input_dim, hidden_dim, output_dim, layers, drop_prob).to(device)
@@ -66,7 +64,7 @@ def wrapper(param, data_x, data_y):
     k_fold_list = []
 
 
-    kf = KFold(n_splits=n_k_fold, shuffle=False)
+    kf = KFold(n_splits=n_k_fold, shuffle=True)
     for train_index, valid_index in kf.split(data_x[0:train_num+valid_num, :, :]):
 
         criterion = nn.MSELoss().to(device)
@@ -134,7 +132,7 @@ def wrapper(param, data_x, data_y):
     write_loss(epoch_arr, loss_arr, step_arr, k_fold_arr, out_path)
 
     # Plot train and validation losses
-    plot_train_val_loss(fig_path, out_fname, dpi=800, yscale='log', ylim=[0.0001, 10])
+    plot_train_val_loss(out_path, out_fname, dpi=800, yscale='log', ylim=[0.0001, 10])
 
     end = time.time()  # Learning Done
     print(f"Learning Done in {end-start}s")
@@ -169,7 +167,7 @@ def wrapper(param, data_x, data_y):
         test_result = mynet(test_x_tensor)
         test_loss = criterion(test_result, test_y_tensor)
         print(f"Test Loss: {test_loss.item()}")
-    plot_result(test_y_tensor, test_result, minmax_y, fig_path, out_fname)
+    plot_result(test_y_tensor, test_result, minmax_y, out_path, out_fname)
 
 
 if __name__ == "__main__":
@@ -178,7 +176,7 @@ if __name__ == "__main__":
     # solve display issue in ssh environment
     os.environ['QT_QPA_PLATFORM'] = 'offscreen'
     device = get_device()
-    get_time = time.strftime("%Y%m%d%H%M%S", time.localtime())
+    get_time = time.strftime("%m%d%H%M", time.localtime())
 
     param = {'data_folder': 'rest_csv_data',
              'device': device,
@@ -208,7 +206,7 @@ if __name__ == "__main__":
     print("Generating Data")
     data_x, data_y = get_data(param)
 
-    for n_epochs in [30, 100]:
+    for n_epochs in [30, 100, 1000, 3000]:
         param['n_epochs'] = n_epochs
         wrapper(param, data_x, data_y)
 

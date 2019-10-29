@@ -7,7 +7,7 @@ We use a deep learning network Gated Recurrent Unit (GRU) to analyze functional 
 We train our model using 795 publicly available fMRI images at rest.
 There are 26 projects.
 Among them, 25 projects are from the [1000 Functional Connectomes Project](http://fcon_1000.projects.nitrc.org/fcpClassic/FcpTable.html).
-The remaining project has 369 samples from the [Southwest University Adult Lifespan Dataset](http://fcon_1000.projects.nitrc.org/indi/retro/sald.html)
+The remaining project has 369 samples from the [Southwest University Adult Lifespan Dataset](http://fcon_1000.projects.nitrc.org/indi/retro/sald.html).
 
 ## Tool
 
@@ -26,11 +26,11 @@ We set the processing parameters according to each project.
 First, use FEAT of FSL to process a random sample of each project and extract the parameters. 
 These parameters are used to normalize the rest of the data in the project.
 This part is only for standardizing images.
-And it corresponds to the program [fsl_in_linux.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/fsl_in_linux.py).
+And it corresponds to the [fsl_in_linux.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/fsl_in_linux.py).
 
 Then we register the data on the the Montreal Institute of Neurology (MNI) brain space Automated Anatomical Labeling atlas (AAL2).
 The FMRIB Linear Image Registration Tool (FLIRT) is used for registration to divide the brain into 94 regions.
-This part corresponds to the program [comparision.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/comparision.py).
+This part corresponds to the [comparision.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/comparision.py).
 
 ## Our model structure
 
@@ -42,7 +42,7 @@ We use the mean square error method to calculate the loss while training.
 
 ### Entropy
 
-In addition, the entropy can be calculated [entropy.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/entropy.py).
+In addition, the entropy can be calculated in [entropy.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/entropy.py).
 
 ## Authors
 

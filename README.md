@@ -1,16 +1,50 @@
-# brain-data-with-age
-brain data with age in Hongik University
+# Introduction (our work)
 
-Master's thesis-- Age Classification From MRI Data Using RNN 2019.08
+We use a deep learning network Gated Recurrent Unit (GRU) to analyze functional magnetic resonance imaging (fMRI) data from the human brain at rest to estimate the age of the subject.
 
-We use a deep learning network to analyze images of the human brain to estimate of subject's age.
-Using functional magnetic resonance imaging (fMRI) data of the human brain,
-we use Gated Recurrent Unit (GRU) deep learning neural network to explore the relationship between the age and the structure human brain.
+## Data Sources
 
-First, the obtained fMRI data is processed, and the image is processed using fsl (fsl_in_linux.py)
+We train our model using 795 publicly available fMRI images at rest.
+There were 26 projects.
+Among them, 25 projects were from the [1000 Functional Connectomes Project](http://fcon_1000.projects.nitrc.org/fcpClassic/FcpTable.html).
+The remaining project has 369 samples from the [Southwest University Adult Lifespan Dataset] (http://fcon_1000.projects.nitrc.org/indi/retro/sald.html)
 
-Secondly, the processed image is compared with the preset image to obtain data of each brain domain with time (comparision.py). 
+## Tool
 
-Third, the age is estimated using a deep learning network (brain_.py). 
+We use the FMRIB software library (FSL) to preprocess fMRI data.
+And we write our GRU model using PyTorch.
 
-In addition, the entropy can be calculated (entropy.py)
+### FSL
+
+FSL is widely used analytical tool library for brain imaging data such as fMRI, MRI and DTI.
+It can be used on Mac and PCs (both Linux, and Windows via a Virtual Machine).
+Detailed installation tutorial reference [FSL website](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/).
+
+## Data Preprocessing
+
+We set the processing parameters according to each project.
+First, use FEAT of FSL to process a random sample of each project and extract the parameters. 
+These parameters are used to normalize the rest of the data in the project.
+This part is only for standardizing images.
+And it corresponds to the program [fsl_in_linux.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/fsl_in_linux.py).
+
+Then we register the data on the the Montreal Institute of Neurology (MNI) brain space Automated Anatomical Labeling atlas (AAL2).
+The FMRIB Linear Image Registration Tool (FLIRT) is used for registration to divide the brain into 94 regions.
+This part corresponds to the program [comparision.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/comparision.py).
+
+## Our model
+
+First, three layers of GRU take an input $X$ where each GRU has 300 hidden states.
+The last GRU is followed by a fully connected (FC) layer.
+Then, we add a batch normalization (BN) layer and ReLU activation.
+Finally, the final FC layer estimates the age.
+We use the mean square error method to calculate the loss while training.
+
+### Entropy
+
+In addition, the entropy can be calculated [entropy.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/entropy.py).
+
+## Authors
+
+qvz was created by Yunfei Gao and Albert No at Hongik University.
+For more information, please refer to the paper Age Estimation From fMRI Data Using Recurrent Neural Network.

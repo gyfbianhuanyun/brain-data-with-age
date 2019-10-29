@@ -7,7 +7,7 @@ We use a deep learning network Gated Recurrent Unit (GRU) to analyze functional 
 We train our model using 795 publicly available fMRI images at rest.
 There were 26 projects.
 Among them, 25 projects were from the [1000 Functional Connectomes Project](http://fcon_1000.projects.nitrc.org/fcpClassic/FcpTable.html).
-The remaining project has 369 samples from the [Southwest University Adult Lifespan Dataset] (http://fcon_1000.projects.nitrc.org/indi/retro/sald.html)
+The remaining project has 369 samples from the [Southwest University Adult Lifespan Dataset](http://fcon_1000.projects.nitrc.org/indi/retro/sald.html)
 
 ## Tool
 

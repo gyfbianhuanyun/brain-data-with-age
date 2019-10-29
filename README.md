@@ -39,6 +39,7 @@ The last GRU is followed by a fully connected (FC) layer.
 Then, we add a batch normalization (BN) layer and ReLU activation.
 Finally, the final FC layer estimates the age.
 We use the mean square error method to calculate the loss while training.
+![Model Structure](./rest_csv_data/model_structure.jpg)
 
 ### Entropy
 

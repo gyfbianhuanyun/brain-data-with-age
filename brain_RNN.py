@@ -7,8 +7,7 @@ class RNNClassifier(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, layers, drop_prob):
         super(RNNClassifier, self).__init__()
         self.rnn = nn.GRU(
-            input_dim, hidden_dim, num_layers=layers, batch_first=True,
-            dropout=drop_prob)
+            input_dim, hidden_dim, num_layers=layers, batch_first=True)
         self.dropout1 = nn.Dropout(p=drop_prob)
         self.fc1 = nn.Linear(hidden_dim, hidden_dim, bias=True)
         self.bn1 = nn.BatchNorm1d(num_features=hidden_dim)

@@ -9,8 +9,7 @@ from brain_RNN import *
 # Plot train and validation loss
 def plot_train_val_loss(out_path, title, dpi=800, yscale=None, ylim=None):
     data = pd.read_csv(os.path.join(out_path, 'loss.csv'))
-    sns.scatterplot(x='epoch', y='loss', hue='k_fold', style='step', legend='full',
-                    palette='Set2', data=data, s=15)
+    sns.scatterplot(x='epoch', y='loss', hue='step', data=data, s=15)
     plt.legend(ncol=4)
 
     if yscale:

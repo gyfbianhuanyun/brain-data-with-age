@@ -14,7 +14,6 @@ from brain_RNN import *
 
 # Main
 def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
-
     device = param['device']
     input_dim = param['region_n']
     n_epochs = param['n_epochs']
@@ -27,9 +26,8 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
     valid_num = param['number_valid']
     test_num = param['number_test']
     layer_rate = learning_rate
-    output_dim = param['output_dimension']
     drop_prob = param['drop_p']
-    
+
     total_num = len(data_y)
 
     if train_num % rate_tr != 0:
@@ -40,7 +38,7 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
         print('Please reset rate_test')
 
     cwd = os.getcwd()
-    out_fname = f'{now_time}_h_{hidden_dim}_l_{layers}_lr_{lr_gamma}_n_{n_epochs}'
+    out_fname = f'{now_time}_h_{hidden_dim}_l_{layers}_lg_{lr_gamma}_n_{n_epochs}_lr{layer_rate}'
     out_path = os.path.join(cwd, out_fname)
     safe_make_dir(out_path)
     temp_path = os.path.join(out_path, 'temp')
@@ -54,22 +52,19 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
     step_list = []
     epoch_list = []
 
-
-
     mynet = RNNClassifier(
-            input_dim, hidden_dim, output_dim, layers, drop_prob).to(device)
+        input_dim, hidden_dim, output_dim, layers, drop_prob).to(device)
     mynet.init_weights()
 
     criterion = nn.MSELoss().to(device)
     optimizer = torch.optim.Adam(mynet.parameters(), lr=layer_rate)
     lr_sche = torch.optim.lr_scheduler.StepLR(
-                    optimizer, step_size=100, gamma=lr_gamma)
+        optimizer, step_size=100, gamma=lr_gamma)
 
-    train_xdata = data_x[train_index]
-    train_ydata = data_y[train_index]
-    valid_xdata = data_x[valid_index]
-    valid_ydata = data_y[valid_index]
-
+    train_xdata = data_x[0:train_num, :, :]
+    train_ydata = data_y[0:train_num]
+    valid_xdata = data_x[train_num:train_num + valid_num, :, :]
+    valid_ydata = data_y[train_num:train_num + valid_num]
 
     total_loss_valid_min = np.Inf
 
@@ -111,7 +106,6 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
         if valid_loss.item() <= total_loss_valid_min:
             torch.save(mynet.state_dict(), os.path.join(temp_path, 'model.pt'))
             total_loss_valid_min = valid_loss.item()
-
 
     epoch_arr = np.array(epoch_list)
     loss_arr = np.array(loss_list)

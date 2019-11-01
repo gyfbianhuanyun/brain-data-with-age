@@ -8,11 +8,9 @@ class RNNClassifier(nn.Module):
         super(RNNClassifier, self).__init__()
         self.rnn = nn.GRU(
             input_dim, hidden_dim, num_layers=layers, batch_first=True)
-        self.dropout1 = nn.Dropout(p=drop_prob)
         self.fc1 = nn.Linear(hidden_dim, hidden_dim, bias=True)
         self.bn1 = nn.BatchNorm1d(num_features=hidden_dim)
         self.relu = nn.ReLU(inplace=True)
-        self.dropout2 = nn.Dropout(p=drop_prob)
         self.fc2 = nn.Linear(hidden_dim, output_dim, bias=True)
 
         # Initialize RNN Module
@@ -32,9 +30,8 @@ class RNNClassifier(nn.Module):
 
     def forward(self, x):
         x, _status = self.rnn(x)
-        x = self.dropout1(x[:, -1])
+        x = x[:, -1]
         x = self.relu(self.bn1(self.fc1(x)))
-        x = self.dropout2(x)
         x = self.fc2(x)
         return x
 

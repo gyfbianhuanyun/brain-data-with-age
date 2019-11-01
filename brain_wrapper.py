@@ -27,7 +27,6 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
     test_num = param['number_test']
     layer_rate = learning_rate
     drop_prob = param['drop_p']
-
     total_num = len(data_y)
 
     if train_num % rate_tr != 0:
@@ -150,7 +149,7 @@ if __name__ == "__main__":
              'drop_p': 0.5,  # Drop probability during training
              'region_n': 94,  # Number of brain regions (input dim 2)
              'time_len': 100,  # Number of timepoints (input dim 1)
-             'n_epochs': 3000,
+             'n_epochs': 5000,
              # Iterable values
              'learning_rate_list': [0.01, 0.001, 0.0001, 0.00001],
              'lr_gamma_list': [0.99, 0.975, 0.95],
@@ -176,4 +175,5 @@ if __name__ == "__main__":
 
     for learning_rate, lr_gamma, hidden_dim, layers in product_set:
         wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers)
+        torch.cuda.empty_cache()
 

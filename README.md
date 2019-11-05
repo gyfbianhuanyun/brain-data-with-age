@@ -28,9 +28,34 @@ These parameters are used to normalize the rest of the data in the project.
 This part is only for standardizing images.
 And it corresponds to the [fsl_in_linux.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/fsl_in_linux.py).
 
+```
+1.Process a random sample to get design.fsf
+2.Use our code to normalize the rest of the data in the project
+
+For example：
+project_namelist = file_name('/Documents')
+for i in range(1, 30):
+    project_name = project_namelist[i]
+    file_namelist = file_name(f'/{project_name}')
+    first_name = file_namelist[0]
+    func_fsl(project_name, file_namelist, first_name)
+```
+
 Then we register the data on the the Montreal Institute of Neurology (MNI) brain space Automated Anatomical Labeling atlas (AAL2).
 The FMRIB Linear Image Registration Tool (FLIRT) is used for registration to divide the brain into 94 regions.
 This part corresponds to the [comparision.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/comparision.py).
+
+```
+1.Get the project name
+2.Use our code to register the data on the AAL2
+
+For example：
+project_namelist = file_name('/Documents')
+for project_name in project_namelist:
+    file_namelist = file_name(f'/Documents/{project_name}')
+    for name in file_namelist:
+        comparision(project_name, name)
+```
 
 ## Our model structure
 
@@ -40,10 +65,6 @@ Then, we add a batch normalization (BN) layer and ReLU activation.
 Finally, the final FC layer estimates the age.
 We use the mean square error method to calculate the loss while training.
 ![Model Structure](./rest_csv_data/model_structure.jpg)
-
-### Entropy
-
-In addition, the entropy can be calculated in [entropy.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/entropy.py).
 
 ## Authors
 

@@ -12,7 +12,7 @@ The remaining project has 369 samples from the [Southwest University Adult Lifes
 ## Tool
 
 Use the FMRIB software library (FSL) to preprocess fMRI data.
-And we write our GRU model using PyTorch.
+And write GRU model using PyTorch.
 
 ### FSL
 

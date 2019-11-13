@@ -59,7 +59,7 @@ for project_name in project_namelist:
 
 ## Model structure
 
-First, three layers of GRU take an input where each GRU has 300 hidden states.
+First, three layers of GRU take an input where each GRU has preset hidden states.
 The last GRU is followed by a fully connected (FC) layer.
 Then, add a batch normalization (BN) layer and ReLU activation.
 Finally, the final FC layer estimates the age.

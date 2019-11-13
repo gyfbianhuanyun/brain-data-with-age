@@ -57,7 +57,7 @@ for project_name in project_namelist:
         comparision(project_name, name)
 ```
 
-## Model structure
+## Model Structure
 
 First, three layers of GRU take an input where each GRU has preset hidden states.
 The last GRU is followed by a fully connected (FC) layer.
@@ -66,7 +66,7 @@ Finally, the final FC layer estimates the age.
 Use the mean square error method to calculate the loss while training.
 ![Model Structure](./rest_csv_data/model_structure.jpg)
 
-## Deep learning
+## Model Training
 
 Build the model in [brain_RNN.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/brain_RNN.py). 
 Use [brain_utils.py](https://github.com/gyfbianhuanyun/brain-data-with-age/blob/master/brain_utils.py) 
@@ -98,6 +98,7 @@ Set the model parameters in brain_wrapper.py
 
 To prevent the GRU out of memory, set the amount of data to be introduced into the GRU each time.
 That is, the sampling rate.
+If have enough GPUs, can train all the data at once, ie rate_train = number_train
 >'rate_train'              Sampling rate in training set
 >'rate_valid'              Sampling rate in validation set
 >'rate_test'               Sampling rate in test set

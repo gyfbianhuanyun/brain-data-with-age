@@ -5,7 +5,7 @@ import itertools
 import time
 import torch
 import torch.nn as nn
-from sklearn.model_selection import KFold
+from torch.nn.utils.rnn import pack_padded_sequence
 
 from brain_plot import *
 from brain_utils import *
@@ -13,7 +13,7 @@ from brain_RNN import *
 
 
 # Main
-def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
+def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim, layers):
     device = param['device']
     input_dim = param['region_n']
     n_epochs = param['n_epochs']
@@ -62,21 +62,24 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
 
     train_xdata = data_x[0:train_num, :, :]
     train_ydata = data_y[0:train_num]
+    train_length_x = length_x[0:train_num]
     valid_xdata = data_x[train_num:train_num + valid_num, :, :]
     valid_ydata = data_y[train_num:train_num + valid_num]
-
+    valid_length_x = length_x[train_num:train_num + valid_num]
     total_loss_valid_min = np.Inf
 
     for i in range(n_epochs):
         # Train
         mynet.train()
-        lr_sche.step()
         loss = 0
 
         for tr in range(int(train_num / rate_tr)):
-            train_x_tensor, train_y_tensor = train(device, tr*rate_tr, rate_tr, train_xdata, train_ydata)
-
+            train_x_tensor, train_y_tensor, train_length_tensor = train(
+                device, tr*rate_tr, rate_tr, train_xdata, train_ydata, train_length_x)
             optimizer.zero_grad()
+            train_x_tensor = pack_padded_sequence(train_x_tensor, train_length_tensor,
+                                                  batch_first=True, enforce_sorted=False)
+
             outputs = mynet(train_x_tensor)
             loss_train = criterion(outputs, train_y_tensor)
             loss_train.backward()
@@ -93,7 +96,11 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
         valid_loss = 0
 
         for va in range(int(valid_num / rate_va)):
-            valid_x_tensor, valid_y_tensor = valid(device, va*rate_va, rate_va, valid_xdata, valid_ydata)
+            valid_x_tensor, valid_y_tensor, valid_length_tensor = valid(
+                device, va*rate_va, rate_va, valid_xdata, valid_ydata, valid_length_x)
+            valid_x_tensor = pack_padded_sequence(valid_x_tensor, valid_length_tensor,
+                                                  batch_first=True, enforce_sorted=False)
+
             valid_result = mynet(valid_x_tensor)
             loss_valid = criterion(valid_result, valid_y_tensor)
             valid_loss = valid_loss + loss_valid
@@ -105,6 +112,8 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
         if valid_loss.item() <= total_loss_valid_min:
             torch.save(mynet.state_dict(), os.path.join(temp_path, 'model.pt'))
             total_loss_valid_min = valid_loss.item()
+
+        lr_sche.step()
 
     epoch_arr = np.array(epoch_list)
     loss_arr = np.array(loss_list)
@@ -124,13 +133,20 @@ def wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers):
 
     mynet.eval()
     with torch.no_grad():
-        test_x_tensor, test_y_tensor = get_tensor(
-            device, data_x, data_y, train_num+valid_num+1, total_num)
+        test_x_tensor, test_y_tensor, test_length_tensor = get_tensor(
+            device, data_x, data_y, length_x, train_num + valid_num, total_num)
+        test_x_tensor = pack_padded_sequence(test_x_tensor, test_length_tensor,
+                                             batch_first=True, enforce_sorted=False)
 
         test_result = mynet(test_x_tensor)
         test_loss = criterion(test_result, test_y_tensor)
         print(f"Test Loss: {test_loss.item()}")
     plot_result(test_y_tensor, test_result, minmax_y, out_path, out_fname)
+
+    real_arr = normalize_tensor(test_y_tensor, minmax_y)[:, -1]
+    result_arr = normalize_tensor(test_result, minmax_y)[:, -1]
+    df_result = pd.DataFrame({'test_age': real_arr, 'real_age': result_arr})
+    df_result.to_csv(os.path.join(out_path, 'test_vs_real.csv'))
 
 
 if __name__ == "__main__":
@@ -165,7 +181,7 @@ if __name__ == "__main__":
 
     # Get data
     print("Generating Data")
-    data_x, data_y = get_data(param)
+    data_x, data_y, length = get_data(param)
 
     product_set = itertools.product(
         param['learning_rate_list'],
@@ -174,6 +190,5 @@ if __name__ == "__main__":
         param['layers_list'])
 
     for learning_rate, lr_gamma, hidden_dim, layers in product_set:
-        wrapper(param, data_x, data_y, learning_rate, lr_gamma, hidden_dim, layers)
+        wrapper(param, data_x, data_y, length, learning_rate, lr_gamma, hidden_dim, layers)
         torch.cuda.empty_cache()
-

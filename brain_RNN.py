@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.nn.utils.rnn import pad_packed_sequence
 
 
 # Model
@@ -8,6 +9,7 @@ class RNNClassifier(nn.Module):
         super(RNNClassifier, self).__init__()
         self.rnn = nn.GRU(
             input_dim, hidden_dim, num_layers=layers, batch_first=True)
+        self.dropout = nn.Dropout(p=drop_prob)
         self.fc1 = nn.Linear(hidden_dim, hidden_dim, bias=True)
         self.bn1 = nn.BatchNorm1d(num_features=hidden_dim)
         self.relu = nn.ReLU(inplace=True)
@@ -29,10 +31,15 @@ class RNNClassifier(nn.Module):
         # If you want to categorize age: output_dim = number of categories
 
     def forward(self, x):
-        x, _status = self.rnn(x)
-        x = x[:, -1]
+        result, _status = self.rnn(x)
+        out, lens_unpacked = pad_packed_sequence(result, batch_first=True)
+        lens_unpacked = (lens_unpacked - 1).unsqueeze(1).unsqueeze(2)
+        index = lens_unpacked.expand(lens_unpacked.size(0),
+                                     lens_unpacked.size(1),
+                                     out.size(2)).cuda()
+        x = torch.gather(out, 1, index).squeeze()
         x = self.relu(self.bn1(self.fc1(x)))
-        x = self.fc2(x)
+        x = self.fc2(self.dropout(x))
         return x
 
     # Initialization parameter
@@ -51,12 +58,13 @@ class RNNClassifier(nn.Module):
 
 
 # Put data in tensor
-def get_tensor(device, data_x, data_y, start_idx, end_idx):
+def get_tensor(device, data_x, data_y, length_x, start_idx, end_idx):
     x_tensor = torch.FloatTensor(data_x[start_idx:end_idx, :, :]).to(device)
     y_tensor = torch.FloatTensor(data_y[start_idx:end_idx])
+    length_tensor = torch.FloatTensor(length_x[start_idx:end_idx]).to(device)
     y_tensor.unsqueeze_(-1)
     y_tensor = y_tensor.to(device)
-    return x_tensor, y_tensor
+    return x_tensor, y_tensor, length_tensor
 
 
 # Use GRU or CPU
@@ -81,14 +89,14 @@ def normalize_tensor(tensor, minmax):
 
 
 # Train
-def train(device, start, rate, datax, datay):
-    train_x_tensor, train_y_tensor = get_tensor(
-        device, datax, datay, start, start + rate)
-    return train_x_tensor, train_y_tensor
+def train(device, start, rate, datax, datay, lengthx):
+    train_x_tensor, train_y_tensor, train_length_tensor = get_tensor(
+        device, datax, datay, lengthx, start, start + rate)
+    return train_x_tensor, train_y_tensor, train_length_tensor
 
 
 # Validation
-def valid(device, start, rate, datax, datay):
-    valid_x_tensor, valid_y_tensor = get_tensor(
-        device, datax, datay, start, start + rate)
-    return valid_x_tensor, valid_y_tensor
+def valid(device, start, rate, datax, datay, lengthx):
+    valid_x_tensor, valid_y_tensor, valid_length_tensor = get_tensor(
+        device, datax, datay, lengthx, start, start + rate)
+    return valid_x_tensor, valid_y_tensor, valid_length_tensor

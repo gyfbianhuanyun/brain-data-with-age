@@ -10,11 +10,15 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from brain_plot import *
 from brain_utils import *
 from brain_RNN import *
+from brain_all_FC import *
 
 
 # Main
 def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim, layers):
     device = param['device']
+    model_name = param['model']
+    brain = param['brain_region']
+    bi = param['bidirection']
     input_dim = param['region_n']
     n_epochs = param['n_epochs']
     minmax_y = param['minmax_y']
@@ -37,7 +41,7 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
         print('Please reset rate_test')
 
     cwd = os.getcwd()
-    out_fname = f'{now_time}_h_{hidden_dim}_l_{layers}_lg_{lr_gamma}_n_{n_epochs}_lr{layer_rate}'
+    out_fname = f'{now_time}_h_{hidden_dim}_l_{layers}_lg_{lr_gamma}_n_{n_epochs}_lr{layer_rate}_model{model_name}'
     out_path = os.path.join(cwd, out_fname)
     safe_make_dir(out_path)
     temp_path = os.path.join(out_path, 'temp')
@@ -51,8 +55,15 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
     step_list = []
     epoch_list = []
 
-    mynet = RNNClassifier(
-        input_dim, hidden_dim, output_dim, layers, drop_prob).to(device)
+    if brain == 'right' or brain == 'left':
+        input_dim = input_dim // 2
+
+    if model_name == 'FC':
+        mynet = All_fc(input_dim, hidden_dim, output_dim, layers,
+                       drop_prob).to(device)
+    else:
+        mynet = RNNClassifier(input_dim, hidden_dim, output_dim, layers,
+                              drop_prob, model_name, bi).to(device)
     mynet.init_weights()
 
     criterion = nn.MSELoss().to(device)
@@ -74,11 +85,15 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
         loss = 0
 
         for tr in range(int(train_num / rate_tr)):
-            train_x_tensor, train_y_tensor, train_length_tensor = train(
-                device, tr*rate_tr, rate_tr, train_xdata, train_ydata, train_length_x)
+            if model_name == 'FC':
+                train_x_tensor, train_y_tensor = train_fc(device, tr * rate_tr, rate_tr, train_xdata, train_ydata)
+
+            else:
+                train_x_tensor, train_y_tensor, train_length_tensor = train_rnn(
+                    device, tr*rate_tr, rate_tr, train_xdata, train_ydata, train_length_x)
+                train_x_tensor = pack_padded_sequence(train_x_tensor, train_length_tensor,
+                                                      batch_first=True, enforce_sorted=False)
             optimizer.zero_grad()
-            train_x_tensor = pack_padded_sequence(train_x_tensor, train_length_tensor,
-                                                  batch_first=True, enforce_sorted=False)
 
             outputs = mynet(train_x_tensor)
             loss_train = criterion(outputs, train_y_tensor)
@@ -96,10 +111,14 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
         valid_loss = 0
 
         for va in range(int(valid_num / rate_va)):
-            valid_x_tensor, valid_y_tensor, valid_length_tensor = valid(
-                device, va*rate_va, rate_va, valid_xdata, valid_ydata, valid_length_x)
-            valid_x_tensor = pack_padded_sequence(valid_x_tensor, valid_length_tensor,
-                                                  batch_first=True, enforce_sorted=False)
+            if model_name == 'FC':
+                valid_x_tensor, valid_y_tensor = valid_fc(device, va * rate_va, rate_va, valid_xdata, valid_ydata)
+
+            else:
+                valid_x_tensor, valid_y_tensor, valid_length_tensor = valid_rnn(
+                    device, va*rate_va, rate_va, valid_xdata, valid_ydata, valid_length_x)
+                valid_x_tensor = pack_padded_sequence(valid_x_tensor, valid_length_tensor,
+                                                      batch_first=True, enforce_sorted=False)
 
             valid_result = mynet(valid_x_tensor)
             loss_valid = criterion(valid_result, valid_y_tensor)
@@ -133,10 +152,14 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
 
     mynet.eval()
     with torch.no_grad():
-        test_x_tensor, test_y_tensor, test_length_tensor = get_tensor(
-            device, data_x, data_y, length_x, train_num + valid_num, total_num)
-        test_x_tensor = pack_padded_sequence(test_x_tensor, test_length_tensor,
-                                             batch_first=True, enforce_sorted=False)
+        if model_name == 'FC':
+            test_x_tensor, test_y_tensor = get_tensor_fc(
+                device, data_x, data_y, train_num + valid_num, total_num)
+        else:
+            test_x_tensor, test_y_tensor, test_length_tensor = get_tensor_rnn(
+                device, data_x, data_y, length_x, train_num + valid_num, total_num)
+            test_x_tensor = pack_padded_sequence(test_x_tensor, test_length_tensor,
+                                                 batch_first=True, enforce_sorted=False)
 
         test_result = mynet(test_x_tensor)
         test_loss = criterion(test_result, test_y_tensor)
@@ -160,6 +183,9 @@ if __name__ == "__main__":
     param = {'data_folder': 'rest_csv_data',
              'device': device,
              'label_fname': 'preprocessed_data.csv',
+             'model': 'GRU',
+             'brain_region': 'all',
+             'bidirection': False,
              'minmax_x': [4, 16789],  # x_values are between 4 and 16788.8
              'minmax_y': [10, 80],  # y_values are between 10 and 80
              'drop_p': 0.5,  # Drop probability during training

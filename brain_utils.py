@@ -21,10 +21,11 @@ def get_data(param):
 
     num_seed = int(param['present_time'])
 
-    region_n = param['region_n']
     time_len = param['time_len']
     minmax_x = param['minmax_x']
     minmax_y = param['minmax_y']
+    model_name = param['model']
+    brain_region = param['brain_region']
 
     data_x = []
     data_y = []
@@ -35,7 +36,16 @@ def get_data(param):
         subject_data_path = reduce(os.path.join, data_path_list)
 
         subject_data = np.genfromtxt(subject_data_path, delimiter=',')
-        subject_x = torch.FloatTensor((subject_data[1:-1, :region_n] - minmax_x[0]) / (minmax_x[1] - minmax_x[0]))
+        if brain_region == 'all':
+            subject_idx = np.arange(0, 94, 1)
+        elif brain_region == 'left':
+            subject_idx = np.arange(0, 94, 2)
+        elif brain_region == 'right':
+            subject_idx = np.arange(1, 94, 2)
+        if model_name == 'FC':
+            subject_x = subject_data[1:time_len + 1, subject_idx]
+        else:
+            subject_x = torch.FloatTensor((subject_data[1:-1, subject_idx] - minmax_x[0]) / (minmax_x[1] - minmax_x[0]))
         subject_y = row.new_age
 
         data_x.append(subject_x)
@@ -43,6 +53,8 @@ def get_data(param):
         length.append(subject_x.shape[0])
 
     # Normalize data
+    if model_name == 'FC':
+        data_x = (np.array(data_x) - minmax_x[0]) / (minmax_x[1] - minmax_x[0])
     data_y = (np.array(data_y) - minmax_y[0]) / (minmax_y[1] - minmax_y[0])
     length = np.array(length)
     data_num = len(data_y)
@@ -51,7 +63,8 @@ def get_data(param):
     np.random.seed(num_seed)
     np.random.shuffle(idx)
 
-    data_x = pad_sequence(data_x, batch_first=True)
+    if model_name != 'FC':
+        data_x = pad_sequence(data_x, batch_first=True)
 
     data_x = data_x[idx, :, :]
     data_y = data_y[idx]

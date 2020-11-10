@@ -5,12 +5,26 @@ from torch.nn.utils.rnn import pad_packed_sequence
 
 # Model
 class RNNClassifier(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, layers, drop_prob):
+    def __init__(self, input_dim, hidden_dim, output_dim, layers, drop_prob,
+                 model_name, bidirection=False):
         super(RNNClassifier, self).__init__()
-        self.rnn = nn.GRU(
-            input_dim, hidden_dim, num_layers=layers, batch_first=True)
+        if model_name == 'RNN':
+            self.rnn = nn.RNN(input_dim, hidden_dim, num_layers=layers,
+                              batch_first=True, bidirectional=bidirection)
+        elif model_name == 'LSTM':
+            self.rnn = nn.LSTM(input_dim, hidden_dim, num_layers=layers,
+                               batch_first=True, bidirectional=bidirection)
+        elif model_name == 'GRU':
+            self.rnn = nn.GRU(input_dim, hidden_dim, num_layers=layers,
+                              batch_first=True, bidirectional=bidirection)
+
         self.dropout = nn.Dropout(p=drop_prob)
-        self.fc1 = nn.Linear(hidden_dim, hidden_dim, bias=True)
+
+        if bidirection:
+            self.fc1 = nn.Linear(hidden_dim * 2, hidden_dim, bias=True)
+        else:
+            self.fc1 = nn.Linear(hidden_dim, hidden_dim, bias=True)
+
         self.bn1 = nn.BatchNorm1d(num_features=hidden_dim)
         self.relu = nn.ReLU(inplace=True)
         self.fc2 = nn.Linear(hidden_dim, output_dim, bias=True)
@@ -45,7 +59,7 @@ class RNNClassifier(nn.Module):
     # Initialization parameter
     def init_weights(self):
         for m in self.modules():
-            if type(m) in [nn.GRU, nn.LSTM, nn.Linear]:
+            if type(m) in [nn.GRU, nn.LSTM, nn.RNN, nn.Linear]:
                 for name, param in m.named_parameters():
                     if 'weight_ih' in name:
                         torch.nn.init.xavier_uniform_(param.data)
@@ -58,7 +72,7 @@ class RNNClassifier(nn.Module):
 
 
 # Put data in tensor
-def get_tensor(device, data_x, data_y, length_x, start_idx, end_idx):
+def get_tensor_rnn(device, data_x, data_y, length_x, start_idx, end_idx):
     x_tensor = torch.FloatTensor(data_x[start_idx:end_idx, :, :]).to(device)
     y_tensor = torch.FloatTensor(data_y[start_idx:end_idx])
     length_tensor = torch.FloatTensor(length_x[start_idx:end_idx]).to(device)
@@ -89,14 +103,14 @@ def normalize_tensor(tensor, minmax):
 
 
 # Train
-def train(device, start, rate, datax, datay, lengthx):
-    train_x_tensor, train_y_tensor, train_length_tensor = get_tensor(
+def train_rnn(device, start, rate, datax, datay, lengthx):
+    train_x_tensor, train_y_tensor, train_length_tensor = get_tensor_rnn(
         device, datax, datay, lengthx, start, start + rate)
     return train_x_tensor, train_y_tensor, train_length_tensor
 
 
 # Validation
-def valid(device, start, rate, datax, datay, lengthx):
-    valid_x_tensor, valid_y_tensor, valid_length_tensor = get_tensor(
+def valid_rnn(device, start, rate, datax, datay, lengthx):
+    valid_x_tensor, valid_y_tensor, valid_length_tensor = get_tensor_rnn(
         device, datax, datay, lengthx, start, start + rate)
     return valid_x_tensor, valid_y_tensor, valid_length_tensor

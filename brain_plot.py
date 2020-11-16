@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import seaborn as sns
 
-from brain_RNN import *
+from brain_utils import normalize_tensor
 
 
 # Plot train and validation loss
@@ -32,4 +32,3 @@ def plot_result(y_tensor, result_tensor, minmax_y, out_path, out_fname):
     output_fname = os.path.join(out_path, 'result.png')
     plt.savefig(output_fname)
     plt.clf()
-

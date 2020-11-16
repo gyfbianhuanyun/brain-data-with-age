@@ -13,6 +13,41 @@ def get_data_path(data_folder):
     return data_path
 
 
+# Get subject idx through the brain region
+def get_subject_idx(region):
+    if region == 'all':
+        subject_idx = np.arange(0, 94, 1)
+    elif region == 'left':
+        subject_idx = np.arange(0, 94, 2)
+    elif region == 'right':
+        subject_idx = np.arange(1, 94, 2)
+    else:
+        raise ValueError("Check the brain region name!")
+
+    return subject_idx
+
+
+# Get data x through the model name
+def get_subject_data_x(model_name, data, time, idx, minmax_x):
+    if model_name == 'FC':
+        data_x = data[1:time+1, idx]
+    else:
+        data_x = torch.FloatTensor((data[1:-1, idx] - minmax_x[0]) /
+                                   (minmax_x[1] - minmax_x[0]))
+
+    return data_x
+
+
+# Normalize data
+def normaize_data(datax, datay, model_name, minmax_x, minmax_y):
+    if model_name == 'FC':
+        x_data = (np.array(datax) - minmax_x[0]) / (minmax_x[1] - minmax_x[0])
+    else:
+        x_data = datax
+    y_data = (np.array(datay) - minmax_y[0]) / (minmax_y[1] - minmax_y[0])
+    return x_data, y_data
+
+
 # Get data
 def get_data(param):
     data_path = get_data_path(param['data_folder'])
@@ -36,26 +71,18 @@ def get_data(param):
         subject_data_path = reduce(os.path.join, data_path_list)
 
         subject_data = np.genfromtxt(subject_data_path, delimiter=',')
-        if brain_region == 'all':
-            subject_idx = np.arange(0, 94, 1)
-        elif brain_region == 'left':
-            subject_idx = np.arange(0, 94, 2)
-        elif brain_region == 'right':
-            subject_idx = np.arange(1, 94, 2)
-        if model_name == 'FC':
-            subject_x = subject_data[1:time_len + 1, subject_idx]
-        else:
-            subject_x = torch.FloatTensor((subject_data[1:-1, subject_idx] - minmax_x[0]) / (minmax_x[1] - minmax_x[0]))
+        subject_idx = get_subject_idx(brain_region)
+
+        subject_x = get_subject_data_x(model_name, subject_data, time_len,
+                                       subject_idx, minmax_x)
         subject_y = row.new_age
 
         data_x.append(subject_x)
         data_y.append(subject_y)
         length.append(subject_x.shape[0])
 
-    # Normalize data
-    if model_name == 'FC':
-        data_x = (np.array(data_x) - minmax_x[0]) / (minmax_x[1] - minmax_x[0])
-    data_y = (np.array(data_y) - minmax_y[0]) / (minmax_y[1] - minmax_y[0])
+    data_x, data_y = normaize_data(data_x, data_y, model_name,
+                                   minmax_x, minmax_y)
     length = np.array(length)
     data_num = len(data_y)
 
@@ -85,3 +112,49 @@ def write_loss(epoch_number_arr, loss_arr, step_name_arr, out_path):
                        'step': step_name_arr})
 
     df.to_csv(os.path.join(out_path, 'loss.csv'))
+
+
+# Use GRU or CPU
+def get_device():
+    if torch.cuda.is_available():
+        device = 'cuda'
+        torch.cuda.manual_seed_all(777)
+        print('Using CUDA')
+    else:
+        device = 'cpu'
+        print('Using CPU')
+    torch.manual_seed(777)
+    return device
+
+
+# Put data in tensor
+def get_tensor(device, data_x, data_y, length_x, start_idx, end_idx):
+    x_tensor = torch.FloatTensor(data_x[start_idx:end_idx, :, :]).to(device)
+    y_tensor = torch.FloatTensor(data_y[start_idx:end_idx])
+    length_tensor = torch.FloatTensor(length_x[start_idx:end_idx]).to(device)
+    y_tensor.unsqueeze_(-1)
+    y_tensor = y_tensor.to(device)
+
+    return x_tensor, y_tensor, length_tensor
+
+
+# Normalize in tensor
+def normalize_tensor(tensor, minmax):
+    min_val = minmax[0]
+    max_val = minmax[1]
+    arr = tensor.cpu().data.numpy()*(max_val-min_val) + min_val
+    return arr
+
+
+# Train
+def train(device, start, rate, datax, datay, lengthx):
+    train_x_tensor, train_y_tensor, train_length_tensor = get_tensor(
+        device, datax, datay, lengthx, start, start + rate)
+    return train_x_tensor, train_y_tensor, train_length_tensor
+
+
+# Validation
+def valid(device, start, rate, datax, datay, lengthx):
+    valid_x_tensor, valid_y_tensor, valid_length_tensor = get_tensor(
+        device, datax, datay, lengthx, start, start + rate)
+    return valid_x_tensor, valid_y_tensor, valid_length_tensor

@@ -1,5 +1,5 @@
-from brain_all_FC import All_fc
-from brain_RNN import RNNClassifier
+from models.brain_all_FC import All_fc
+from models.brain_RNN import RNNClassifier
 
 
 def model(param, input_dim, hidden_dim, output_dim, layers,

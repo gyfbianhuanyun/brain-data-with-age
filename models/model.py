@@ -16,7 +16,7 @@ def model(param, input_dim, hidden_dim, output_dim, layers,
         net = RNNClassifier(input_dim, hidden_dim, output_dim, layers,
                             drop_prob, model_name, bi).to(device)
     else:
-        raise ValueError("Check the model name!(RNN/ LSTM/ GRU)")
+        raise ValueError("Check the model name!(RNN/ LSTM/ GRU/ FC)")
 
     net.init_weights()
 

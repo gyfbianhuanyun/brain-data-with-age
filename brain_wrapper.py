@@ -7,14 +7,18 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 
-from brain_plot import *
-from brain_utils import *
-from brain_RNN import *
+from models.model import model
+from brain_plot import plot_result, plot_train_val_loss
+from brain_utils import (safe_make_dir, train, valid, get_tensor, get_data,
+                         get_device, write_loss, normalize_tensor)
 
 
 # Main
-def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim, layers):
+def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma,
+            hidden_dim, layers):
     device = param['device']
+    model_name = param['model']
+    brain = param['brain_region']
     input_dim = param['region_n']
     n_epochs = param['n_epochs']
     minmax_y = param['minmax_y']
@@ -26,7 +30,6 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
     valid_num = param['number_valid']
     test_num = param['number_test']
     layer_rate = learning_rate
-    drop_prob = param['drop_p']
     total_num = len(data_y)
 
     if train_num % rate_tr != 0:
@@ -37,7 +40,8 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
         print('Please reset rate_test')
 
     cwd = os.getcwd()
-    out_fname = f'{now_time}_h_{hidden_dim}_l_{layers}_lg_{lr_gamma}_n_{n_epochs}_lr{layer_rate}'
+    out_fname = f'{now_time}_h_{hidden_dim}_l_{layers}_lg_{lr_gamma}' \
+                f'_n_{n_epochs}_lr{layer_rate}_model{model_name}'
     out_path = os.path.join(cwd, out_fname)
     safe_make_dir(out_path)
     temp_path = os.path.join(out_path, 'temp')
@@ -51,14 +55,15 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
     step_list = []
     epoch_list = []
 
-    mynet = RNNClassifier(
-        input_dim, hidden_dim, output_dim, layers, drop_prob).to(device)
-    mynet.init_weights()
+    if brain == 'right' or brain == 'left':
+        input_dim = input_dim // 2
+
+    mynet = model(param, input_dim, hidden_dim, output_dim, layers, device)
 
     criterion = nn.MSELoss().to(device)
     optimizer = torch.optim.Adam(mynet.parameters(), lr=layer_rate)
-    lr_sche = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=100, gamma=lr_gamma)
+    lr_sche = torch.optim.lr_scheduler.StepLR(optimizer,
+                                              step_size=100, gamma=lr_gamma)
 
     train_xdata = data_x[0:train_num, :, :]
     train_ydata = data_y[0:train_num]
@@ -75,10 +80,13 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
 
         for tr in range(int(train_num / rate_tr)):
             train_x_tensor, train_y_tensor, train_length_tensor = train(
-                device, tr*rate_tr, rate_tr, train_xdata, train_ydata, train_length_x)
+                device, tr*rate_tr, rate_tr, train_xdata, train_ydata,
+                train_length_x)
+            if model_name != 'FC':
+                train_x_tensor = pack_padded_sequence(
+                    train_x_tensor, train_length_tensor,
+                    batch_first=True, enforce_sorted=False)
             optimizer.zero_grad()
-            train_x_tensor = pack_padded_sequence(train_x_tensor, train_length_tensor,
-                                                  batch_first=True, enforce_sorted=False)
 
             outputs = mynet(train_x_tensor)
             loss_train = criterion(outputs, train_y_tensor)
@@ -96,10 +104,13 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
         valid_loss = 0
 
         for va in range(int(valid_num / rate_va)):
-            valid_x_tensor, valid_y_tensor, valid_length_tensor = valid(
-                device, va*rate_va, rate_va, valid_xdata, valid_ydata, valid_length_x)
-            valid_x_tensor = pack_padded_sequence(valid_x_tensor, valid_length_tensor,
-                                                  batch_first=True, enforce_sorted=False)
+            valid_x_tensor, valid_y_tensor, valid_length_tensor = \
+                valid(device, va*rate_va, rate_va, valid_xdata,
+                      valid_ydata, valid_length_x)
+            if model_name != 'FC':
+                valid_x_tensor = pack_padded_sequence(
+                    valid_x_tensor, valid_length_tensor,
+                    batch_first=True, enforce_sorted=False)
 
             valid_result = mynet(valid_x_tensor)
             loss_valid = criterion(valid_result, valid_y_tensor)
@@ -123,7 +134,8 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
     write_loss(epoch_arr, loss_arr, step_arr, out_path)
 
     # Plot train and validation losses
-    plot_train_val_loss(out_path, out_fname, dpi=800, yscale='log', ylim=[0.0001, 10])
+    plot_train_val_loss(out_path, out_fname, dpi=800,
+                        yscale='log', ylim=[0.0001, 10])
 
     end = time.time()  # Learning Done
     print(f"Learning Done in {end-start}s")
@@ -135,8 +147,10 @@ def wrapper(param, data_x, data_y, length_x, learning_rate, lr_gamma, hidden_dim
     with torch.no_grad():
         test_x_tensor, test_y_tensor, test_length_tensor = get_tensor(
             device, data_x, data_y, length_x, train_num + valid_num, total_num)
-        test_x_tensor = pack_padded_sequence(test_x_tensor, test_length_tensor,
-                                             batch_first=True, enforce_sorted=False)
+        if model_name != 'FC':
+            test_x_tensor = pack_padded_sequence(
+                test_x_tensor, test_length_tensor,
+                batch_first=True, enforce_sorted=False)
 
         test_result = mynet(test_x_tensor)
         test_loss = criterion(test_result, test_y_tensor)
@@ -160,6 +174,9 @@ if __name__ == "__main__":
     param = {'data_folder': 'rest_csv_data',
              'device': device,
              'label_fname': 'preprocessed_data.csv',
+             'model': 'GRU',
+             'brain_region': 'all',
+             'bidirection': False,
              'minmax_x': [4, 16789],  # x_values are between 4 and 16788.8
              'minmax_y': [10, 80],  # y_values are between 10 and 80
              'drop_p': 0.5,  # Drop probability during training
@@ -190,5 +207,6 @@ if __name__ == "__main__":
         param['layers_list'])
 
     for learning_rate, lr_gamma, hidden_dim, layers in product_set:
-        wrapper(param, data_x, data_y, length, learning_rate, lr_gamma, hidden_dim, layers)
+        wrapper(param, data_x, data_y, length, learning_rate, lr_gamma,
+                hidden_dim, layers)
         torch.cuda.empty_cache()

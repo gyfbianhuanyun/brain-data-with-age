@@ -39,7 +39,7 @@ def get_subject_data_x(model_name, data, time, idx, minmax_x):
 
 
 # Normalize data
-def normaize_data(datax, datay, model_name, minmax_x, minmax_y):
+def normalize_data(datax, datay, model_name, minmax_x, minmax_y):
     if model_name == 'FC':
         x_data = (np.array(datax) - minmax_x[0]) / (minmax_x[1] - minmax_x[0])
     else:
@@ -81,8 +81,8 @@ def get_data(param):
         data_y.append(subject_y)
         length.append(subject_x.shape[0])
 
-    data_x, data_y = normaize_data(data_x, data_y, model_name,
-                                   minmax_x, minmax_y)
+    data_x, data_y = normalize_data(data_x, data_y, model_name,
+                                    minmax_x, minmax_y)
     length = np.array(length)
     data_num = len(data_y)
 

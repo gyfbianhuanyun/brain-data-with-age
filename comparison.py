@@ -14,7 +14,7 @@ def file_name(file_dir):
     return filelist
 
 
-def get_reads_through_comparision(project_name, file_name):
+def comparison(project_name, file_name):
     # Load mask.nii
     mask_file = nib.load('aal2_3mm_o.nii')
     mask_data = mask_file.get_data()
@@ -63,7 +63,7 @@ for project_name in project_namelist:
     print(len(file_namelist), len(project_namelist))
     for name in file_namelist:
         print(project_name, name)
-        get_reads_through_comparision(project_name, name)
+        comparison(project_name, name)
 '''
 
 end4 = time.clock()

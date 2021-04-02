@@ -182,6 +182,7 @@ if __name__ == "__main__":
              'drop_p': 0.5,  # Drop probability during training
              'region_n': 94,  # Number of brain regions (input dim 2)
              'time_len': 100,  # Number of timepoints (input dim 1)
+             'n_head': 5,  # Number of multi head attention
              'n_epochs': 5000,
              # Iterable values
              'learning_rate_list': [0.01, 0.001, 0.0001, 0.00001],
